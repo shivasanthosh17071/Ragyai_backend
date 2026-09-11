@@ -68,11 +68,15 @@ Every product carries a virtual `discountPercent`, `totalStock` and `inStock`.
 
 `GET /` 🔓 returns the nested tree. `POST /` · `PUT /:id` · `DELETE /:id` 👑 — delete is refused while products or sub-categories still reference it.
 
+## Reels — `/reels`
+
+`GET /` 🔓 active reels only, newest-first within `displayOrder`; pass `?includeInactive=true` as an admin to see everything. `POST /` · `PUT /:id` · `DELETE /:id` 👑 — `{ video: { url, publicId }, caption?, product?, displayOrder?, isActive? }`. Delete also removes the video from Cloudinary.
+
 ## Cart — `/cart` (all 🔐)
 
 `GET /` · `POST /items` `{ product, sku, qty }` · `PUT /items/:itemId` `{ qty }` · `DELETE /items/:itemId` · `DELETE /`
 
-Every read re-prices against the live catalogue and flags `priceChanged`, `inStock` and `stock` per line. Guests keep a client-side cart and post it into `POST /orders` at checkout.
+Every read re-prices against the live catalogue and flags `priceChanged`, `inStock` and `stock` per line. Checkout (`POST /orders`) requires a logged-in session — there is no guest checkout.
 
 ## Coupons — `/coupons`
 

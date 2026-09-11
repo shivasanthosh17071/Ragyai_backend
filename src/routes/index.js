@@ -13,6 +13,7 @@ import shippingRoutes from './shipping.routes.js';
 import adminRoutes from './admin.routes.js';
 import contactRoutes from './contact.routes.js';
 import settingsRoutes from './settings.routes.js';
+import reelRoutes from './reel.routes.js';
 
 const router = Router();
 
@@ -30,5 +31,6 @@ router.use('/shipping', shippingRoutes);
 router.use('/admin', adminRoutes);
 router.use('/contact', contactRoutes);
 router.use('/settings', settingsRoutes);
+router.use('/reels', reelRoutes);
 
 export default router;

@@ -7,3 +7,4 @@ export { default as Review } from './Review.model.js';
 export { default as Order, ORDER_STATUSES, STATUS_FLOW } from './Order.model.js';
 export { default as Counter } from './Counter.model.js';
 export { default as Settings } from './Settings.model.js';
+export { default as Reel } from './Reel.model.js';

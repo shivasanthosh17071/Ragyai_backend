@@ -73,6 +73,18 @@ export const updateReviewSchema = {
   }),
 };
 
+/* ---------- reels ---------- */
+export const reelSchema = {
+  body: z.object({
+    video: z.object({ url: z.string().url(), publicId: z.string() }),
+    caption: z.string().max(200).optional(),
+    product: objectId.nullable().optional(),
+    displayOrder: z.number().int().optional(),
+    isActive: z.boolean().optional(),
+  }),
+};
+export const updateReelSchema = { body: reelSchema.body.partial() };
+
 /* ---------- contact ---------- */
 export const contactSchema = {
   body: z.object({
