@@ -25,7 +25,7 @@ import {
 const PRIMARY_SHOTS = [
   "photo-1521572163474-6864f9cf17ab", // man wearing a plain white crew-neck tee
   "photo-1622445275463-afa2ab738c34", // man in a plain white oversized tee, cap, outdoors
-  "photo-1622445272461-c6580cab8755", // man leaning on a wall in a plain white tee
+  "premium_photo-1727942419945-1908baae3c8e", // man in a plain white tee, seated studio portrait
   "photo-1595211877493-41a4e5f236b3", // man in a plain black long-sleeve tee, smiling
   "photo-1581655353564-df123a1eb820", // plain white tee on a hanger, concrete wall
   "photo-1651761179569-4ba2aa054997", // plain white tee, flat product shot
@@ -40,8 +40,14 @@ const DETAIL_SHOTS = [
   "photo-1620799139834-6b8f844fbe61", // two folded white tees, flat lay
 ];
 
-const unsplash = (photoId, w = 900, h = 1200) =>
-  `https://images.unsplash.com/${photoId}?w=${w}&h=${h}&fit=crop&auto=format&q=80`;
+// Unsplash Plus photos (`premium_photo-...` ids) are served from a different subdomain
+// than free photos and 404 on images.unsplash.com.
+const unsplash = (photoId, w = 900, h = 1200) => {
+  const base = photoId.startsWith("premium_photo-")
+    ? "https://plus.unsplash.com"
+    : "https://images.unsplash.com";
+  return `${base}/${photoId}?w=${w}&h=${h}&fit=crop&auto=format&q=80`;
+};
 
 const img = (photoId, seed, n) => ({
   url: unsplash(photoId),
@@ -213,13 +219,13 @@ const run = async () => {
   /* ---------- users ---------- */
   const admin = new User({
     name: "Store Owner",
-    email: "admin@example.com",
+    email: "admin@ragyaim.com",
     phone: "9000000001",
     role: "admin",
     isEmailVerified: true,
     isPhoneVerified: true,
   });
-  await admin.setPassword("Admin@12345");
+  await admin.setPassword("Santhosh@123@12345");
   await admin.save();
 
   const customer = new User({

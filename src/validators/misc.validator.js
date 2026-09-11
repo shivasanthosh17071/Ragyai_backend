@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { objectId, paginationQuery, pincode, addressSchema } from './common.js';
+import { objectId, paginationQuery, pincode, addressSchema, email } from './common.js';
 
 /* ---------- cart ---------- */
 export const addCartItemSchema = {
@@ -70,6 +70,15 @@ export const updateReviewSchema = {
   body: z.object({
     rating: z.number().int().min(1).max(5).optional(),
     comment: z.string().max(2000).optional(),
+  }),
+};
+
+/* ---------- contact ---------- */
+export const contactSchema = {
+  body: z.object({
+    name: z.string().min(2).max(80),
+    email,
+    message: z.string().min(5).max(2000),
   }),
 };
 

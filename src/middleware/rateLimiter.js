@@ -31,6 +31,11 @@ export const resendVerificationLimiter = rateLimit({
   message: 'Too many verification requests. Please wait before retrying',
 });
 
+export const contactLimiter = rateLimit({
+  ...base, windowMs: 15 * 60 * 1000, max: 5,
+  message: 'Too many messages sent. Please wait before trying again',
+});
+
 export const paymentLimiter = rateLimit({
   ...base, windowMs: 5 * 60 * 1000, max: 30,
   message: 'Too many payment requests, please slow down',

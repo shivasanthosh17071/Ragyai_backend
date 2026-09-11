@@ -23,7 +23,6 @@ export const createOrderSchema = {
     fromCart: z.boolean().default(false),
     shippingAddress,
     addressId: objectId.optional(),
-    guestInfo: z.object({ name: z.string().min(2), email, phone }).optional(),
     couponCode: z.string().max(30).optional(),
     paymentMethod: z.enum(['razorpay', 'cod']),
     notes: z.string().max(500).optional(),

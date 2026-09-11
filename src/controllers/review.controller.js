@@ -9,7 +9,7 @@ export const listProductReviews = asyncHandler(async (req, res) => {
   const { page, limit } = q(req);
   const filter = { product: req.params.productId, isApproved: true };
 
-  const [reviews, total, breakdown] = await Promise.all([
+  const [reviews, total, breakdown, alreadyReviewed, purchased] = await Promise.all([
     Review.find(filter).populate('user', 'name').sort({ createdAt: -1 })
       .skip((page - 1) * limit).limit(limit).lean(),
     Review.countDocuments(filter),
@@ -17,6 +17,8 @@ export const listProductReviews = asyncHandler(async (req, res) => {
       { $match: { product: new mongoose.Types.ObjectId(String(req.params.productId)), isApproved: true } },
       { $group: { _id: '$rating', count: { $sum: 1 } } },
     ]),
+    req.user ? Review.exists({ product: req.params.productId, user: req.user._id }) : null,
+    req.user ? hasDeliveredOrder(req.user._id, req.params.productId) : null,
   ]);
 
   const ratingBreakdown = [5, 4, 3, 2, 1].reduce((acc, r) => {
@@ -25,9 +27,22 @@ export const listProductReviews = asyncHandler(async (req, res) => {
   }, {});
 
   return sendSuccess(res, {
-    data: { reviews, ratingBreakdown },
+    data: {
+      reviews,
+      ratingBreakdown,
+      // Only meaningful when a viewer is logged in — the storefront hides the "write a
+      // review" form entirely for guests regardless of this value.
+      viewerCanReview: Boolean(req.user) && Boolean(purchased) && !alreadyReviewed,
+    },
     meta: paginationMeta({ page, limit, total }),
   });
+});
+
+/** A delivered order containing this product — the sole basis for review eligibility. */
+const hasDeliveredOrder = (userId, productId) => Order.exists({
+  user: userId,
+  'items.product': productId,
+  orderStatus: 'delivered',
 });
 
 export const createReview = asyncHandler(async (req, res) => {
@@ -36,24 +51,18 @@ export const createReview = asyncHandler(async (req, res) => {
   const existing = await Review.findOne({ product, user: req.user._id });
   if (existing) throw ApiError.conflict('You have already reviewed this product');
 
-  // A delivered order for this product auto-approves the review.
-  const purchased = await Order.exists({
-    user: req.user._id,
-    'items.product': product,
-    orderStatus: 'delivered',
-  });
+  const purchased = await hasDeliveredOrder(req.user._id, product);
+  if (!purchased) {
+    throw ApiError.forbidden('Only customers who have received this product can write a review');
+  }
 
   const review = await Review.create({
     product, user: req.user._id, rating, comment, images,
-    isVerifiedPurchase: Boolean(purchased),
-    isApproved: Boolean(purchased),
+    isVerifiedPurchase: true,
+    isApproved: true,
   });
 
-  return sendSuccess(res, {
-    status: 201,
-    message: purchased ? 'Review published' : 'Review submitted for moderation',
-    data: { review },
-  });
+  return sendSuccess(res, { status: 201, message: 'Review published', data: { review } });
 });
 
 export const updateReview = asyncHandler(async (req, res) => {

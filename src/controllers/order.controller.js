@@ -10,21 +10,18 @@ import {
 } from '../services/order.service.js';
 
 export const createOrder = asyncHandler(async (req, res) => {
-  const { items, fromCart, shippingAddress, addressId, guestInfo, couponCode, paymentMethod } = req.body;
-  const user = req.user || null;
-
-  if (!user && !guestInfo) throw ApiError.badRequest('Guest checkout requires name, email and phone');
+  const { items, fromCart, shippingAddress, addressId, couponCode, paymentMethod } = req.body;
+  const user = req.user;
 
   let sourceItems = items;
   if (fromCart) {
-    if (!user) throw ApiError.unauthorized('Log in to check out from a saved cart');
     const cart = await Cart.findOne({ user: user._id });
     if (!cart?.items.length) throw ApiError.badRequest('Your cart is empty');
     sourceItems = cart.items.map((i) => ({ product: i.product, sku: i.variant.sku, qty: i.qty }));
   }
 
   let address = shippingAddress;
-  if (addressId && user) {
+  if (addressId) {
     const saved = user.addresses.id(addressId);
     if (!saved) throw ApiError.notFound('Address not found');
     address = {
@@ -41,11 +38,10 @@ export const createOrder = asyncHandler(async (req, res) => {
 
   // Prices, stock and discount all recomputed server-side.
   const lines = await buildOrderLines(sourceItems);
-  const { totals, couponApplied } = await priceOrder({ lines, couponCode, userId: user?._id });
+  const { totals, couponApplied } = await priceOrder({ lines, couponCode, userId: user._id });
 
   const order = new Order({
-    user: user?._id || null,
-    guestInfo: user ? undefined : guestInfo,
+    user: user._id,
     items: lines,
     shippingAddress: address,
     ...totals,

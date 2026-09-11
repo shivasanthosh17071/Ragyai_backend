@@ -11,6 +11,8 @@ import reviewRoutes from './review.routes.js';
 import uploadRoutes from './upload.routes.js';
 import shippingRoutes from './shipping.routes.js';
 import adminRoutes from './admin.routes.js';
+import contactRoutes from './contact.routes.js';
+import settingsRoutes from './settings.routes.js';
 
 const router = Router();
 
@@ -26,5 +28,7 @@ router.use('/reviews', reviewRoutes);
 router.use('/upload', uploadRoutes);
 router.use('/shipping', shippingRoutes);
 router.use('/admin', adminRoutes);
+router.use('/contact', contactRoutes);
+router.use('/settings', settingsRoutes);
 
 export default router;

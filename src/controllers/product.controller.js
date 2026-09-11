@@ -57,13 +57,16 @@ export const listProducts = asyncHandler(async (req, res) => {
   const projection = search ? { score: { $meta: 'textScore' } } : {};
 
   const [products, total] = await Promise.all([
+    // Not .lean() — inStock/totalStock/discountPercent are virtuals (Product.model.js),
+    // and Mongoose 8 has no native `lean({ virtuals: true })` support (that's only real
+    // with the separate mongoose-lean-virtuals plugin, which isn't installed here). Real
+    // documents pick up the schema's toJSON:{virtuals:true} automatically on serialize.
     Product.find(filter, projection)
       .populate('category', 'name slug')
       .populate('subCategory', 'name slug')
       .sort(sortSpec)
       .skip((page - 1) * limit)
-      .limit(limit)
-      .lean({ virtuals: true }),
+      .limit(limit),
     Product.countDocuments(filter),
   ]);
 
@@ -82,6 +85,7 @@ export const getRelatedProducts = asyncHandler(async (req, res) => {
   const product = await Product.findById(req.params.id).select('category tags _id');
   if (!product) throw ApiError.notFound('Product not found');
 
+  // Not .lean() — see the note in listProducts above; inStock/discountPercent are virtuals.
   const related = await Product.find({
     _id: { $ne: product._id },
     isActive: true,
@@ -89,8 +93,7 @@ export const getRelatedProducts = asyncHandler(async (req, res) => {
   })
     .sort({ ratingsCount: -1, createdAt: -1 })
     .limit(8)
-    .select('name slug images basePrice baseMrp ratingsAverage variants')
-    .lean({ virtuals: true });
+    .select('name slug images basePrice baseMrp ratingsAverage variants');
 
   return sendSuccess(res, { data: { products: related } });
 });

@@ -18,6 +18,9 @@ const settingsSchema = new mongoose.Schema(
     },
     shippingFee: { type: Number, default: env.store.shippingFee },
     freeShippingThreshold: { type: Number, default: env.store.freeShippingThreshold },
+    // Free-text override for the storefront's top banner. When blank, the storefront
+    // computes a default from freeShippingThreshold instead.
+    freeShippingBannerText: { type: String, default: '' },
     taxPercent: { type: Number, default: env.store.taxPercent },
     lowStockThreshold: { type: Number, default: env.store.lowStockThreshold },
     codEnabled: { type: Boolean, default: true },
