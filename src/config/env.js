@@ -13,6 +13,9 @@ export const env = {
     .split(",")
     .map((o) => o.trim())
     .filter(Boolean),
+  // Canonical frontend URL for links embedded in emails (verification, reset). Kept separate
+  // from clientOrigins so reordering the CORS allow-list can never silently change email links.
+  appUrl: process.env.APP_URL || (process.env.CLIENT_ORIGINS || "http://localhost:3000").split(",")[0].trim(),
 
   mongoUri: process.env.MONGO_URI,
 

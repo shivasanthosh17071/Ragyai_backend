@@ -1,4 +1,3 @@
-import crypto from 'crypto';
 import { User } from '../models/index.js';
 import ApiError from '../utils/apiError.js';
 import asyncHandler from '../utils/asyncHandler.js';
@@ -25,11 +24,11 @@ const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
 /** Issues a fresh verification token for the user and emails the link. Never throws. */
 const sendVerificationEmail = async (user) => {
   const raw = randomToken();
-  user.emailVerificationToken = crypto.createHash('sha256').update(raw).digest('hex');
+  user.emailVerificationToken = hashToken(raw);
   user.emailVerificationExpiry = new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS);
   await user.save({ validateBeforeSave: false });
 
-  const link = `${env.clientOrigins[0]}/verify-email?token=${raw}`;
+  const link = `${env.appUrl}/verify-email?token=${raw}`;
   return sendEmail({
     to: user.email,
     subject: `Verify your email for ${env.brandName}`,
@@ -54,20 +53,19 @@ export const register = asyncHandler(async (req, res) => {
   await user.setPassword(password);
   await user.save();
 
-  const { accessToken } = await issueSession(user, res);
   const emailResult = await sendVerificationEmail(user);
 
   return sendSuccess(res, {
     status: 201,
-    message: 'Account created',
+    message: 'Account created — check your email to verify it before logging in',
     // devVerificationSent lets the storefront show the dev-mode hint the same way OTP does.
-    data: { user, accessToken, ...(env.isProd ? {} : { devVerificationSent: emailResult?.dev === true }) },
+    data: { user, ...(env.isProd ? {} : { devVerificationSent: emailResult?.dev === true }) },
   });
 });
 
 export const verifyEmail = asyncHandler(async (req, res) => {
   const { token } = req.body;
-  const hashed = crypto.createHash('sha256').update(token).digest('hex');
+  const hashed = hashToken(token);
 
   const user = await User.findOne({
     emailVerificationToken: hashed,
@@ -84,9 +82,15 @@ export const verifyEmail = asyncHandler(async (req, res) => {
 });
 
 export const resendVerificationEmail = asyncHandler(async (req, res) => {
-  if (req.user.isEmailVerified) throw ApiError.badRequest('Your email is already verified');
-  await sendVerificationEmail(req.user);
-  return sendSuccess(res, { message: 'Verification email sent' });
+  const { email } = req.body;
+  const user = await User.findOne({ email });
+
+  // Always respond identically so the endpoint cannot enumerate accounts.
+  if (user && !user.isEmailVerified) {
+    await sendVerificationEmail(user);
+  }
+
+  return sendSuccess(res, { message: 'If that email is registered and unverified, a verification link has been sent' });
 });
 
 export const login = asyncHandler(async (req, res) => {
@@ -99,6 +103,11 @@ export const login = asyncHandler(async (req, res) => {
     throw ApiError.unauthorized('Invalid credentials');
   }
   if (!user.isActive) throw ApiError.forbidden('This account has been disabled');
+  if (!user.isEmailVerified) {
+    const err = ApiError.forbidden('Please verify your email before logging in');
+    err.code = 'EMAIL_NOT_VERIFIED';
+    throw err;
+  }
 
   const { accessToken } = await issueSession(user, res);
   return sendSuccess(res, { message: 'Logged in', data: { user, accessToken } });
@@ -190,7 +199,7 @@ export const forgotPassword = asyncHandler(async (req, res) => {
   // Always respond identically so the endpoint cannot enumerate accounts.
   if (user) {
     const raw = randomToken();
-    user.passwordResetToken = crypto.createHash('sha256').update(raw).digest('hex');
+    user.passwordResetToken = hashToken(raw);
     user.passwordResetExpiry = new Date(Date.now() + 30 * 60 * 1000);
     await user.save({ validateBeforeSave: false });
 
@@ -206,7 +215,7 @@ export const forgotPassword = asyncHandler(async (req, res) => {
 
 export const resetPassword = asyncHandler(async (req, res) => {
   const { token, password } = req.body;
-  const hashed = crypto.createHash('sha256').update(token).digest('hex');
+  const hashed = hashToken(token);
 
   const user = await User.findOne({
     passwordResetToken: hashed,

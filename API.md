@@ -19,17 +19,19 @@ Legend: 🔓 public · 🔐 logged in · 👑 admin
 
 ## Auth — `/auth`
 
-| Method | Path               | Access | Notes                                                                         |
-| ------ | ------------------ | ------ | ----------------------------------------------------------------------------- |
-| POST   | `/register`        | 🔓     | `{ name, email, phone, password }` → `{ user, accessToken }` + refresh cookie |
-| POST   | `/login`           | 🔓     | `{ identifier, password }` — identifier is email **or** phone                 |
-| POST   | `/send-otp`        | 🔓     | `{ phone, purpose: 'login'\|'verify' }`. Returns `devOtp` outside production  |
-| POST   | `/verify-otp`      | 🔓     | `{ phone, otp }` → session. 5 wrong attempts invalidate the OTP               |
-| POST   | `/refresh-token`   | 🔓     | Reads the cookie, rotates it, returns a new access token                      |
-| POST   | `/logout`          | 🔓     | Clears the cookie and the stored token hash                                   |
-| POST   | `/forgot-password` | 🔓     | `{ email }` — always the same response, so accounts cannot be enumerated      |
-| POST   | `/reset-password`  | 🔓     | `{ token, password }` — bumps `tokenVersion`, killing existing sessions       |
-| GET    | `/me`              | 🔐     | Current user                                                                  |
+| Method | Path                    | Access | Notes                                                                         |
+| ------ | ----------------------- | ------ | ------------------------------------------------------------------------------ |
+| POST   | `/register`             | 🔓     | `{ name, email, phone, password }` → `{ user }`. No session is created — sends a verification email; the account cannot log in until it's clicked |
+| POST   | `/login`                | 🔓     | `{ identifier, password }` — identifier is email **or** phone. `403 { code: "EMAIL_NOT_VERIFIED" }` if the account's email isn't verified yet |
+| POST   | `/send-otp`             | 🔓     | `{ phone, purpose: 'login'\|'verify' }`. Returns `devOtp` outside production  |
+| POST   | `/verify-otp`           | 🔓     | `{ phone, otp }` → session. 5 wrong attempts invalidate the OTP               |
+| POST   | `/refresh-token`        | 🔓     | Reads the cookie, rotates it, returns a new access token                      |
+| POST   | `/logout`               | 🔓     | Clears the cookie and the stored token hash                                   |
+| POST   | `/forgot-password`      | 🔓     | `{ email }` — always the same response, so accounts cannot be enumerated      |
+| POST   | `/reset-password`       | 🔓     | `{ token, password }` — bumps `tokenVersion`, killing existing sessions       |
+| POST   | `/verify-email`         | 🔓     | `{ token }` — marks the account verified. Token expires 24h after being issued |
+| POST   | `/resend-verification`  | 🔓     | `{ email }` — always the same response, so accounts cannot be enumerated      |
+| GET    | `/me`                   | 🔐     | Current user                                                                  |
 
 Password rule: min 8 chars, at least one letter and one digit.
 
@@ -157,4 +159,4 @@ Revenue figures count paid orders that are not cancelled or returned.
 
 ## Rate limits
 
-`/auth/login`, `/register`, `/forgot-password`, `/reset-password` 10 per 15 min · `/auth/send-otp`, `/verify-otp` 5 per 10 min per IP+phone · `/payments/*` 30 per 5 min (webhook exempt) · writes 60/min · everything under `/api` 1000 per 15 min.
+`/auth/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email` 10 per 15 min · `/auth/send-otp`, `/verify-otp` 5 per 10 min per IP+phone · `/auth/resend-verification` 5 per 15 min per IP+email · `/payments/*` 30 per 5 min (webhook exempt) · writes 60/min · everything under `/api` 1000 per 15 min.

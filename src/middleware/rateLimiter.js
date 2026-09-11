@@ -25,6 +25,12 @@ export const otpLimiter = rateLimit({
   message: 'Too many OTP requests. Please wait before retrying',
 });
 
+export const resendVerificationLimiter = rateLimit({
+  ...base, windowMs: 15 * 60 * 1000, max: 5,
+  keyGenerator: (req) => `${req.ip}:${req.body?.email || ''}`,
+  message: 'Too many verification requests. Please wait before retrying',
+});
+
 export const paymentLimiter = rateLimit({
   ...base, windowMs: 5 * 60 * 1000, max: 30,
   message: 'Too many payment requests, please slow down',

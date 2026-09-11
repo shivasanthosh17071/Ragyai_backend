@@ -29,6 +29,7 @@ export const errorHandler = (err, _req, res, _next) => {
   res.status(error.statusCode).json({
     success: false,
     message: error.statusCode >= 500 && env.isProd ? 'Something went wrong' : error.message,
+    ...(error.code && { code: error.code }),
     ...(error.errors && { errors: error.errors }),
     ...(!env.isProd && error.statusCode >= 500 && { stack: err.stack }),
   });
